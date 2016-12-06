@@ -1,13 +1,6 @@
-﻿#if DEBUG
-#r "bin/Debug/EventStore.ClientAPI.dll"
-#r "bin/Debug/FSharp.Control.AsyncSeq.dll"
-#r "bin/Debug/FSharp.Data.dll"
-#r "bin/Debug/Micromachine.dll"
-#r "bin/Debug/Survey.dll"
-#else
-#r "bin/Release/EventStore.ClientAPI.dll"
-#r "bin/Release/FSharp.Control.AsyncSeq.dll"
-#r "bin/Release/FSharp.Data.dll"
+﻿#r "../packages/EventStore.Client/lib/net40/EventStore.ClientAPI.dll"
+#r "../packages/FSharp.Control.AsyncSeq/lib/net45/FSharp.Control.AsyncSeq.dll"
+#r "../packages/FSharp.Data/lib/portable-net45+netcore45/FSharp.Data.DesignTime.dll"
+#r "../packages/FSharp.Data/lib/portable-net45+netcore45/FSharp.Data.dll"
 #r "bin/Release/Micromachine.dll"
 #r "bin/Release/Survey.dll"
-#endif
