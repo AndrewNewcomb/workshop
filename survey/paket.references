@@ -1,0 +1,4 @@
+EventStore.Client
+FSharp.Control.AsyncSeq
+FSharp.Data
+Zlib.Portable

@@ -1,0 +1,6 @@
+.vs
+.paket/paket.exe
+.fake
+bin
+obj
+packages

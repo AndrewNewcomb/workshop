@@ -1,0 +1,9 @@
+EventStore.Client
+FSharp.Control.AsyncSeq
+FSharp.Data
+Zlib.Portable
+
+group test
+  unquote
+  xunit
+  xunit.runner.visualstudio

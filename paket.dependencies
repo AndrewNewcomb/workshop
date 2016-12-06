@@ -1,0 +1,17 @@
+source https://api.nuget.org/v3/index.json
+nuget EventStore.Client
+nuget FSharp.Control.AsyncSeq
+nuget FSharp.Data
+
+group build
+  source https://api.nuget.org/v3/index.json
+  nuget FAKE
+  nuget FSharp.Compiler.Service
+  nuget FSharp.Configuration
+
+group test
+  source https://api.nuget.org/v3/index.json
+  nuget unquote
+  nuget xunit
+  nuget xunit.runner.console
+  nuget xunit.runner.visualstudio
