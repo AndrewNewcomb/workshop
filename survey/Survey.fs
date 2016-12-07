@@ -7,7 +7,7 @@ exception SurveyDoesNotExist
 exception SurveyAlreadyPublished
 exception SurveyAlreadyClosed
 exception SurveyIsEmpty
-
+    
 type SurveyAction =
     | Authored of title:string * author:string
     | QuestionAdded of id:string * Question
@@ -21,6 +21,29 @@ and Response =
     | FreeForm
     | Choice of string
 
+type Response with
+    static member FromJson(_:Response) =
+        parseObj <| fun json -> jsonParse {
+            let! responseType = json .@ "responseType"
+            let! responseText = json .@? "responseText"
+
+            let response = 
+                match responseType, responseText with
+                | "FreeForm", _ -> FreeForm
+                | "Choice", Some s -> Choice s
+                | _ -> failwith "Could not parse Response FromJson"
+
+            return response}
+
+type Question with
+    static member FromJson(_:Question) =
+        parseObj <| fun json -> jsonParse {
+            let! question = json .@ "question"
+            let! responses = json .@ "responses"
+
+            let q = {question=question; responses=responses}
+            return q}
+
 type SurveyAction with
 
     static member ToJson(action) : JsonValue =
@@ -28,21 +51,17 @@ type SurveyAction with
         | Authored(title, author) ->
             jobj [| "action" .= "authored"; "title" .= title; "author" .= author |]
         | QuestionAdded(id, question) ->
+            // serialising question and its responses from here, but could have separate ToJson members
+            let responseSer response =
+                match response with
+                | FreeForm -> jobj [| "responseType" .= "FreeForm" |]
+                | Choice s -> jobj [| "responseType" .= "Choice"; "responseText" .= s |]
 
-// wanted to serialise the responses array, but have not figured it out
-//            let responseSer response =
-//                match response with
-//                | FreeForm -> jobj [| "FreeFrom" .= "FreeForm" |]
-//                | Choice s -> jobj [| "Choice" .= s |]
-//
-//            let questionResponses = question.responses |> Array.map responseSer 
+            let questionResponses = question.responses |> Array.map responseSer                 
+            let qjobj = jobj [| "question" .= question.question; "responses" .= questionResponses |]
 
-            let serResponse =
-                if question.responses = [|FreeForm|]
-                then "FreeForm"
-                else failwith "Choice is not supported"
-                
-            jobj [| "action" .= "questionAdded"; "id" .= id; "question" .= question.question; "responses" .= serResponse |]
+            let r = jobj [| "action" .= "questionAdded"; "id" .= id; "question" .= qjobj |]
+            r
         | _ ->
             jobj [| "action" .= "todo" |]
 
@@ -57,20 +76,12 @@ type SurveyAction with
             | "questionAdded" ->
                 let! id = json .@ "id"
                 let! question = json .@ "question"
-
-// wanted to serialise the responses array, but have not figured it out
-//                let! responsesCombined = json .@ "responses"
-
-                let! resp = json .@ "responses"
-                let responses =
-                    if resp = "FreeForm"
-                    then [| FreeForm |]
-                    else failwith "Choice is not supported"
-
-                let q = {question=question; responses=responses}
-                return QuestionAdded(id, q)
+                let r = QuestionAdded(id, question)
+                return r
             | unknown ->
                 return failwithf "unimplemented action: %s" unknown }
+
+
 
 type State =
     | SurveyCreated
