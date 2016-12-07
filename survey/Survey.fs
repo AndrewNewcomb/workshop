@@ -22,6 +22,10 @@ and Response =
     | Choice of string
 
 type Response with
+    static member ToJson(response) : JsonValue =
+        match response with
+        | FreeForm -> jobj [| "responseType" .= "FreeForm" |]
+        | Choice s -> jobj [| "responseType" .= "Choice"; "responseText" .= s |]
     static member FromJson(_:Response) =
         parseObj <| fun json -> jsonParse {
             let! responseType = json .@ "responseType"
@@ -36,13 +40,16 @@ type Response with
             return response}
 
 type Question with
+
+    static member ToJson(question) : JsonValue =
+            jobj [| "question" .= question.question; "responses" .= question.responses |]
+
     static member FromJson(_:Question) =
         parseObj <| fun json -> jsonParse {
             let! question = json .@ "question"
             let! responses = json .@ "responses"
 
-            let q = {question=question; responses=responses}
-            return q}
+            return {question=question; responses=responses}}
 
 type SurveyAction with
 
@@ -51,17 +58,7 @@ type SurveyAction with
         | Authored(title, author) ->
             jobj [| "action" .= "authored"; "title" .= title; "author" .= author |]
         | QuestionAdded(id, question) ->
-            // serialising question and its responses from here, but could have separate ToJson members
-            let responseSer response =
-                match response with
-                | FreeForm -> jobj [| "responseType" .= "FreeForm" |]
-                | Choice s -> jobj [| "responseType" .= "Choice"; "responseText" .= s |]
-
-            let questionResponses = question.responses |> Array.map responseSer                 
-            let qjobj = jobj [| "question" .= question.question; "responses" .= questionResponses |]
-
-            let r = jobj [| "action" .= "questionAdded"; "id" .= id; "question" .= qjobj |]
-            r
+            jobj [| "action" .= "questionAdded"; "id" .= id; "question" .= question |]
         | _ ->
             jobj [| "action" .= "todo" |]
 
@@ -76,8 +73,7 @@ type SurveyAction with
             | "questionAdded" ->
                 let! id = json .@ "id"
                 let! question = json .@ "question"
-                let r = QuestionAdded(id, question)
-                return r
+                return QuestionAdded(id, question)
             | unknown ->
                 return failwithf "unimplemented action: %s" unknown }
 

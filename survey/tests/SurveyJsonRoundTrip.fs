@@ -17,7 +17,7 @@ let ``Authored should round trip`` () =
 // TODO: Add tests for the rest (part 2 of service construction)
 
 [<Fact>]
-let ``!? QuestionAdded should round trip - have bypassed array`` () =
+let ``QuestionAdded should round trip`` () =
     let action = Survey.QuestionAdded("qid", {question = "thequestion"; responses= [|Survey.FreeForm|]})
     let roundTripped = roundTrip action
     test <@ action = roundTripped @>
