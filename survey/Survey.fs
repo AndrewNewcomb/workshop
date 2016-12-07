@@ -59,6 +59,12 @@ type SurveyAction with
             jobj [| "action" .= "authored"; "title" .= title; "author" .= author |]
         | QuestionAdded(id, question) ->
             jobj [| "action" .= "questionAdded"; "id" .= id; "question" .= question |]
+        | Published(publishedDate) ->
+            let r = jobj [| "action" .= "published"; "publishedDate" .= publishedDate |]
+            r
+        | Closed(closedDate) ->
+            let r = jobj [| "action" .= "closed"; "closedDate" .= closedDate |]
+            r
         | _ ->
             jobj [| "action" .= "todo" |]
 
@@ -74,6 +80,14 @@ type SurveyAction with
                 let! id = json .@ "id"
                 let! question = json .@ "question"
                 return QuestionAdded(id, question)
+            | "published" ->
+                let! publishedDate = json .@ "publishedDate"
+                let r = Published(publishedDate)
+                return r
+            | "closed" ->
+                let! closedDate = json .@ "closedDate"
+                let r = Closed(closedDate)
+                return r
             | unknown ->
                 return failwithf "unimplemented action: %s" unknown }
 
