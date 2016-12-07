@@ -41,5 +41,68 @@ type SurveyAction with
             | unknown ->
                 return failwithf "unimplemented action: %s" unknown }
 
-let reduce (actions:AsyncSeq<SurveyAction>) (* : Result<??, exn> *) =
-    failwith "implement me using SurveyActionValidation"
+type State =
+    | SurveyCreated
+    | SurveyPublished
+    | SurveyClosed
+    | SurveyCancelled
+
+type SurveyState = 
+    {        
+        title: string
+        author: string
+        questions: Map<string, Question>
+        state: State
+    }
+    
+let tryPerformAction survey action =
+    let initialise = 
+        match action with
+        | Authored(title, author) ->
+            Ok {
+                title = title
+                author = author
+                questions = Map.empty
+                state = SurveyCreated}
+        | _ ->
+            Error <| SurveyDoesNotExist 
+    
+
+
+    let nextChoiceAfterAction incomingSurveyState =
+        match incomingSurveyState.state, action with
+        | SurveyCreated, Authored(title, author) ->
+            Ok { incomingSurveyState with title = title; author = author}
+        | SurveyCreated, QuestionAdded(key, question) ->  
+            Ok { incomingSurveyState with questions = incomingSurveyState.questions.Add(key, question)}
+        | SurveyCreated, Published(publishedDate) ->     
+            match incomingSurveyState.questions.IsEmpty with
+            | false -> Ok { incomingSurveyState with state = SurveyPublished}
+            | true -> Error <| SurveyIsEmpty
+        | SurveyPublished, Closed(closedDate) ->     
+            Ok { incomingSurveyState with state = SurveyClosed}
+        | SurveyPublished, Published(publishedDate) ->  
+            Error <| SurveyAlreadyPublished
+        | SurveyClosed, Closed(closedDate) ->  
+            Error <| SurveyAlreadyPublished
+        | _ ->
+            failwith "not implemented yet"            
+                  
+    let nextState =
+        match survey with
+        | None -> initialise                     
+        | Some incomingChoice -> 
+            match incomingChoice with
+            | Ok incomingState -> nextChoiceAfterAction incomingState 
+            | Error exn -> incomingChoice
+
+    let result = Some nextState
+    result
+
+    
+let reduce (actions:AsyncSeq<SurveyAction>) : Async<Choice<SurveyState, exn>> = async {
+    let! result = actions |> AsyncSeq.fold tryPerformAction None
+    match result with
+    | Some result -> return result
+    | None -> return Error <| SurveyDoesNotExist
+}
