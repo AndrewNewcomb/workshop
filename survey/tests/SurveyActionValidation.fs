@@ -16,10 +16,13 @@ let reduceSurvey xs =
 
 [<Fact>]
 let ``The first event must be Authored`` () =
+    // a first event of authored is ok
     let result =
         [Survey.Authored("Test Survey", "F# Hacker")]
         |> reduceSurvey
     test <@ result |> assertOk @>
+
+    // check each of the other events as the first event to see they each fail
     [ Survey.Published(sometime ())
       Survey.Closed(sometime ())
       Survey.QuestionAdded("color", freeformQ "What is your favorite color?")
@@ -66,3 +69,33 @@ let ``The last authorship event should supersede others`` () =
           Survey.Authored("Test Survey", "F# Hacker") ] |> reduceSurvey
     test <@ resultA = resultB @>
     test <@ resultA |> assertOk @>
+
+[<Fact>]
+let ``A question can be removed if not already published`` () =
+    let result =
+        [ Survey.Authored("Test Survey", "F# Hacker")
+          Survey.QuestionAdded("qA", freeformQ "A")
+          Survey.QuestionAdded("qB", freeformQ "B")
+          Survey.QuestionRemoved("qA", freeformQ "Does not matter as uses the id")
+          Survey.Published(sometime ())
+        ] |> reduceSurvey
+
+    test <@ result |> assertOk @>
+
+    match result with 
+    | Ok survey -> 
+        test <@ survey.questions.ContainsKey("qB") @>
+        test <@ survey.questions.Count = 1 @>
+    | _ -> ()
+
+[<Fact>]
+let ``A question cannot be removed if already published`` () =
+    let result =
+        [ Survey.Authored("Test Survey", "F# Hacker")
+          Survey.QuestionAdded("qA", freeformQ "A")
+          Survey.QuestionAdded("qB", freeformQ "B")
+          Survey.Published(sometime ())
+          Survey.QuestionRemoved("qA", freeformQ "Does not matter as uses the id")
+        ] |> reduceSurvey
+
+    test <@ result |> isError Survey.SurveyAlreadyPublished @>

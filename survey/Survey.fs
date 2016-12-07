@@ -11,7 +11,7 @@ exception SurveyIsEmpty
 type SurveyAction =
     | Authored of title:string * author:string
     | QuestionAdded of id:string * Question
-    | QuestionRemoved of id:string * Question
+    | QuestionRemoved of id:string * Question // why does this have the id and the question?
     | Published of System.DateTime
     | Closed of System.DateTime
 and Question =
@@ -59,6 +59,8 @@ type SurveyAction with
             jobj [| "action" .= "authored"; "title" .= title; "author" .= author |]
         | QuestionAdded(id, question) ->
             jobj [| "action" .= "questionAdded"; "id" .= id; "question" .= question |]
+        | QuestionRemoved(id, question) ->
+            jobj [| "action" .= "questionRemoved"; "id" .= id; "question" .= question |]
         | Published(publishedDate) ->
             let r = jobj [| "action" .= "published"; "publishedDate" .= publishedDate |]
             r
@@ -80,6 +82,10 @@ type SurveyAction with
                 let! id = json .@ "id"
                 let! question = json .@ "question"
                 return QuestionAdded(id, question)
+            | "questionRemoved" ->
+                let! id = json .@ "id"
+                let! question = json .@ "question"
+                return QuestionRemoved(id, question)
             | "published" ->
                 let! publishedDate = json .@ "publishedDate"
                 let r = Published(publishedDate)
@@ -127,6 +133,8 @@ let tryPerformAction survey action =
             Ok { incomingSurveyState with title = title; author = author}
         | SurveyCreated, QuestionAdded(key, question) ->  
             Ok { incomingSurveyState with questions = incomingSurveyState.questions.Add(key, question)}
+        | SurveyCreated, QuestionRemoved(key, question) ->  
+            Ok { incomingSurveyState with questions = incomingSurveyState.questions.Remove(key)}
         | SurveyCreated, Published(publishedDate) ->     
             match incomingSurveyState.questions.IsEmpty with
             | false -> Ok { incomingSurveyState with state = SurveyPublished}
@@ -134,6 +142,8 @@ let tryPerformAction survey action =
         | SurveyPublished, Closed(closedDate) ->     
             Ok { incomingSurveyState with state = SurveyClosed}
         | SurveyPublished, Published(publishedDate) ->  
+            Error <| SurveyAlreadyPublished
+        | SurveyPublished, QuestionRemoved(key, question) ->  
             Error <| SurveyAlreadyPublished
         | SurveyClosed, Closed(closedDate) ->  
             Error <| SurveyAlreadyPublished

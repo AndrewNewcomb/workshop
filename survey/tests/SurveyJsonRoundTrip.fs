@@ -24,6 +24,13 @@ let ``QuestionAdded should round trip`` () =
     let roundTripped = roundTrip action
     test <@ action = roundTripped @>
 
+
+[<Fact>]
+let ``QuestionRemoved should round trip`` () =
+    let action = Survey.QuestionRemoved("qid", {question = "thequestion"; responses= [|Survey.FreeForm|]})
+    let roundTripped = roundTrip action
+    test <@ action = roundTripped @>
+
 [<Fact>]
 let ``Published should round trip`` () =
     let dt = sometimeNoMilliSeconds()
