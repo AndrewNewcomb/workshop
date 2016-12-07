@@ -16,7 +16,7 @@ type SurveyAction =
     | Closed of System.DateTime
 and Question =
   { question : string
-    responses : Response[] }
+    responses : Response [] }
 and Response =
     | FreeForm
     | Choice of string
@@ -27,6 +27,22 @@ type SurveyAction with
         match action with
         | Authored(title, author) ->
             jobj [| "action" .= "authored"; "title" .= title; "author" .= author |]
+        | QuestionAdded(id, question) ->
+
+// wanted to serialise the responses array, but have not figured it out
+//            let responseSer response =
+//                match response with
+//                | FreeForm -> jobj [| "FreeFrom" .= "FreeForm" |]
+//                | Choice s -> jobj [| "Choice" .= s |]
+//
+//            let questionResponses = question.responses |> Array.map responseSer 
+
+            let serResponse =
+                if question.responses = [|FreeForm|]
+                then "FreeForm"
+                else failwith "Choice is not supported"
+                
+            jobj [| "action" .= "questionAdded"; "id" .= id; "question" .= question.question; "responses" .= serResponse |]
         | _ ->
             jobj [| "action" .= "todo" |]
 
@@ -38,6 +54,21 @@ type SurveyAction with
                 let! title = json .@ "title"
                 let! author = json .@ "author"
                 return Authored(title, author)
+            | "questionAdded" ->
+                let! id = json .@ "id"
+                let! question = json .@ "question"
+
+// wanted to serialise the responses array, but have not figured it out
+//                let! responsesCombined = json .@ "responses"
+
+                let! resp = json .@ "responses"
+                let responses =
+                    if resp = "FreeForm"
+                    then [| FreeForm |]
+                    else failwith "Choice is not supported"
+
+                let q = {question=question; responses=responses}
+                return QuestionAdded(id, q)
             | unknown ->
                 return failwithf "unimplemented action: %s" unknown }
 
