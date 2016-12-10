@@ -58,7 +58,7 @@ let ``We can't close a survey more than once`` () =
           Survey.Closed(sometime ())
           Survey.Closed(sometime ())
         ] |> reduceSurvey
-    test <@ result |> isError Survey.SurveyAlreadyClosed @>
+    test <@ result |> isError Survey.SurveyAlreadyPublished @>
 
 [<Fact>]
 let ``The last authorship event should supersede others`` () =
